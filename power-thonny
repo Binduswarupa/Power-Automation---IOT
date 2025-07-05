@@ -1,0 +1,34 @@
+from machine import I2C, Pin
+from ina219 import INA219
+import time
+
+# I2C setup (GP0=SDA, GP1=SCL)
+i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=100000)
+
+# Initialize INA219 sensors with different addresses
+sensor1 = INA219(i2c, addr=0x40)
+sensor2 = INA219(i2c, addr=0x41)
+sensor3 = INA219(i2c, addr=0x44)
+
+# Smoothing function
+def average_current(sensor, samples=10, delay=0.05):
+    total = 0
+    for _ in range(samples):
+        total += sensor.current  # mA
+        time.sleep(delay)
+    return total / samples  # mA
+
+while True:
+    for i, sensor in enumerate([sensor1, sensor2, sensor3], start=1):
+        voltage = sensor.bus_voltage
+        shunt = sensor.shunt_voltage
+        current_mA = average_current(sensor)
+        power_mW = voltage * current_mA
+
+        print(f"[Sensor {i}] Bus Voltage: {voltage:.2f} V")
+        print(f"[Sensor {i}] Shunt Voltage: {shunt:.5f} V")
+        print(f"[Sensor {i}] Current: {current_mA:.2f} mA (avg)")
+        #print(f"[Sensor {i}] Power: {power_mW:.2f} mW")
+        print("-" * 50)
+
+    time.sleep(1)
